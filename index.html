@@ -1,0 +1,2484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f0e9" />
+  <title>상담 로거</title>
+  <style>
+    :root{
+      --bg:#f5f1eb;
+      --paper:#fffdf9;
+      --paper-2:#faf6f0;
+      --text:#3e342d;
+      --muted:#968579;
+      --line:#e8ded3;
+      --beige:#dfd0c0;
+      --brown:#755c49;
+      --brown-dark:#594536;
+      --danger:#9d665d;
+      --shadow:0 12px 34px rgba(77,59,44,.08);
+      --glow:rgba(223,208,192,.28);
+      --overlay:rgba(40,30,24,.34);
+    }
+
+    body.dark{
+      --bg:#1f1a17;
+      --paper:#2a231f;
+      --paper-2:#342b26;
+      --text:#f2e9df;
+      --muted:#b7a79a;
+      --line:#463a33;
+      --beige:#7d6858;
+      --brown:#c4a98f;
+      --brown-dark:#d3b99f;
+      --danger:#d58d82;
+      --shadow:0 14px 34px rgba(0,0,0,.22);
+      --glow:rgba(126,103,85,.18);
+      --overlay:rgba(0,0,0,.58);
+    }
+
+    *{box-sizing:border-box}
+
+    html,body{margin:0;min-height:100%}
+
+    body{
+      background:
+        radial-gradient(circle at top left, var(--glow), transparent 34%),
+        var(--bg);
+      color:var(--text);
+      font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",
+        "Noto Sans KR","Apple SD Gothic Neo",sans-serif;
+      -webkit-font-smoothing:antialiased;
+      transition:background .2s ease,color .2s ease;
+    }
+
+    button,input,textarea{font:inherit}
+    button{color:inherit;-webkit-tap-highlight-color:transparent}
+    [hidden]{display:none !important}
+
+    .app{
+      width:min(760px, calc(100% - 28px));
+      margin:0 auto;
+      padding:28px 0 60px;
+    }
+
+    .screen{display:none}
+    .screen.active{display:block}
+
+    /* AUTH */
+    .auth-screen{min-height:100vh;display:grid;place-items:center;padding:26px 18px;background:radial-gradient(circle at 15% 0%,var(--glow),transparent 34%),var(--bg)}
+    .auth-card{width:min(430px,100%);border:1px solid var(--line);border-radius:26px;background:var(--paper);box-shadow:0 22px 60px rgba(77,59,44,.14);padding:28px}
+    .auth-brand{margin-bottom:24px;text-align:center}
+    .auth-brand h1{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:36px;font-weight:500;letter-spacing:-.045em}
+    .auth-brand p{margin:9px 0 0;color:var(--muted);font-size:13px;line-height:1.65}
+    .auth-field{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+    .auth-field label{color:var(--muted);font-size:11px;font-weight:750}
+    .auth-field input{width:100%;height:46px;border:1px solid var(--line);border-radius:13px;padding:0 13px;outline:none;background:var(--paper-2);color:var(--text)}
+    .auth-field input:focus{border-color:var(--brown);box-shadow:0 0 0 3px rgba(117,92,73,.10)}
+    .auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
+    .auth-login,.auth-signup{height:44px;border-radius:13px;cursor:pointer;font-weight:800}
+    .auth-login{border:0;background:var(--brown);color:#fff}
+    body.dark .auth-login{color:#241b16}
+    .auth-signup{border:1px solid var(--beige);background:var(--paper);color:var(--brown)}
+    .auth-message{min-height:18px;margin:12px 2px 0;color:var(--danger);font-size:12px;line-height:1.5;text-align:center}
+    .auth-note{margin:15px 0 0;color:var(--muted);font-size:11px;line-height:1.6;text-align:center}
+    .account-email{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper-2);color:var(--text);font-size:12px;overflow-wrap:anywhere}
+    .logout-btn{width:100%;margin-top:10px;border:1px solid var(--beige);border-radius:13px;padding:11px 14px;background:var(--paper);color:var(--brown);cursor:pointer;font-weight:800}
+
+    /* HEADER */
+    .list-header{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:center;
+      gap:18px;
+      padding:6px 2px 20px;
+    }
+
+    .title-wrap h1{
+      margin:0;
+      font-family:Georgia,"Times New Roman",serif;
+      font-size:38px;
+      font-weight:500;
+      letter-spacing:-.045em;
+    }
+
+    .title-wrap p{
+      margin:7px 0 0;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .header-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .icon-btn,
+    .theme-btn{
+      width:42px;
+      height:42px;
+      display:grid;
+      place-items:center;
+      flex:none;
+      border:1px solid var(--line);
+      border-radius:50%;
+      background:var(--paper);
+      color:var(--brown);
+      cursor:pointer;
+      box-shadow:var(--shadow);
+      font-size:18px;
+      transition:transform .16s ease, background .2s ease, border-color .2s ease;
+    }
+
+    .icon-btn:hover,
+    .theme-btn:hover{transform:translateY(-1px)}
+
+    .add-btn,
+    .primary-btn{
+      border:0;
+      border-radius:999px;
+      padding:12px 16px;
+      background:var(--brown);
+      color:white;
+      cursor:pointer;
+      font-weight:750;
+      white-space:nowrap;
+      box-shadow:0 8px 20px rgba(89,69,54,.14);
+    }
+
+    body.dark .add-btn,
+    body.dark .primary-btn{
+      color:#241b16;
+    }
+
+    .add-btn:hover,
+    .primary-btn:hover{background:var(--brown-dark)}
+
+    /* SEARCH */
+    .search-panel{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 160px auto;
+      gap:9px;
+      margin-bottom:16px;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:17px;
+      background:var(--paper);
+      box-shadow:var(--shadow);
+    }
+
+    .search-input,
+    .search-date{
+      width:100%;
+      height:42px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:var(--paper-2);
+      color:var(--text);
+      outline:none;
+      padding:0 12px;
+    }
+
+    .search-input:focus,
+    .search-date:focus{
+      border-color:var(--brown);
+      box-shadow:0 0 0 3px rgba(117,92,73,.10);
+    }
+
+    .clear-search{
+      border:0;
+      border-radius:12px;
+      padding:0 13px;
+      background:transparent;
+      color:var(--muted);
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    .search-summary{
+      margin:-4px 2px 12px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    /* LIST */
+    .record-list{
+      display:grid;
+      gap:12px;
+    }
+
+    .record{
+      position:relative;
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:18px 54px 16px 18px;
+      text-align:left;
+      background:var(--paper);
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      transition:transform .16s ease, border-color .16s ease;
+      outline:none;
+    }
+
+    .record:focus-visible{
+      border-color:var(--brown);
+      box-shadow:0 0 0 3px rgba(117,92,73,.12), var(--shadow);
+    }
+
+    .favorite-toggle{
+      position:absolute;
+      top:12px;
+      right:12px;
+      width:34px;
+      height:34px;
+      display:grid;
+      place-items:center;
+      border:0;
+      border-radius:50%;
+      background:transparent;
+      color:var(--muted);
+      cursor:pointer;
+      font-size:20px;
+      line-height:1;
+      transition:transform .15s ease, background .15s ease, color .15s ease;
+    }
+
+    .favorite-toggle:hover{
+      transform:scale(1.06);
+      background:var(--paper-2);
+    }
+
+    .favorite-toggle.active{
+      color:#b58a3a;
+    }
+
+    body.dark .favorite-toggle.active{
+      color:#e5bc67;
+    }
+
+    .record:hover{
+      transform:translateY(-1px);
+      border-color:var(--beige);
+    }
+
+    .record-top{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:flex-start;
+    }
+
+    .record-title{
+      margin:0;
+      font-size:17px;
+      line-height:1.45;
+      font-weight:760;
+      overflow-wrap:anywhere;
+    }
+
+    .record-date{
+      flex:none;
+      color:var(--muted);
+      font-size:12px;
+      padding-top:2px;
+    }
+
+    .record-person{
+      margin-top:7px;
+      color:var(--brown);
+      font-size:13px;
+      font-weight:650;
+    }
+
+    .record-birth{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .record-preview{
+      margin:11px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.6;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      white-space:pre-wrap;
+    }
+
+    .empty{
+      padding:86px 24px;
+      text-align:center;
+      border:1px dashed var(--beige);
+      border-radius:22px;
+      color:var(--muted);
+      background:var(--paper-2);
+    }
+
+    .empty strong{
+      display:block;
+      margin-bottom:8px;
+      color:var(--text);
+      font-size:17px;
+    }
+
+    .empty button{
+      margin-top:18px;
+      border:1px solid var(--beige);
+      background:var(--paper);
+      color:var(--brown);
+      border-radius:999px;
+      padding:10px 15px;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .bottom-note{
+      margin:20px 0 0;
+      text-align:center;
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.65;
+    }
+
+    /* DETAIL / EDIT */
+    .detail{
+      min-height:calc(100vh - 56px);
+      display:flex;
+      flex-direction:column;
+    }
+
+    .detail-bar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .bar-left,
+    .bar-right{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .ghost-btn,
+    .delete-btn{
+      border:0;
+      cursor:pointer;
+      border-radius:12px;
+      background:transparent;
+      font-weight:750;
+    }
+
+    .ghost-btn{
+      padding:10px 5px;
+      color:var(--muted);
+    }
+
+    .edit-btn{
+      border:1px solid var(--beige);
+      border-radius:999px;
+      padding:10px 16px;
+      background:var(--paper);
+      color:var(--brown);
+      cursor:pointer;
+      font-weight:750;
+    }
+
+    .detail-favorite{
+      width:40px;
+      height:40px;
+      display:grid;
+      place-items:center;
+      border:1px solid var(--line);
+      border-radius:50%;
+      background:var(--paper);
+      color:var(--muted);
+      cursor:pointer;
+      font-size:20px;
+    }
+
+    .detail-favorite.active{
+      color:#b58a3a;
+    }
+
+    body.dark .detail-favorite.active{
+      color:#e5bc67;
+    }
+
+    .note-paper{
+      flex:1;
+      border:1px solid var(--line);
+      border-radius:24px;
+      background:var(--paper);
+      box-shadow:var(--shadow);
+      padding:22px;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .title-input{
+      width:100%;
+      border:0;
+      outline:0;
+      background:transparent;
+      color:var(--text);
+      font-size:26px;
+      line-height:1.3;
+      font-weight:780;
+      letter-spacing:-.025em;
+      padding:1px 0 18px;
+    }
+
+    .title-input::placeholder{color:#c0b3a8}
+
+    .meta{
+      display:grid;
+      grid-template-columns:1fr auto 150px;
+      gap:10px;
+      padding-bottom:14px;
+    }
+
+    .birth-meta{
+      padding:0 0 14px;
+    }
+
+    .birth-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+    }
+
+    .birth-label{
+      display:block;
+      margin-bottom:8px;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:750;
+    }
+
+    .birth-head .birth-label{margin-bottom:0}
+
+    /* SEGMENTED TOGGLE */
+    .seg{
+      display:inline-flex;
+      gap:3px;
+      padding:3px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:var(--paper-2);
+    }
+
+    .seg button{
+      height:34px;
+      padding:0 14px;
+      border:0;
+      border-radius:9px;
+      background:transparent;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:750;
+      cursor:pointer;
+      white-space:nowrap;
+      transition:background .15s ease,color .15s ease;
+    }
+
+    .seg.small button{height:28px;padding:0 11px;font-size:12px}
+
+    .seg button.active{
+      background:var(--brown);
+      color:#fff;
+    }
+
+    body.dark .seg button.active{color:#241b16}
+
+    .seg button:disabled{cursor:default}
+    .read-mode .seg{border-color:transparent}
+    .read-mode .seg button:not(.active){opacity:.5}
+    .editing .seg{border-color:var(--beige)}
+
+    /* PAYMENT / NOTES */
+    .pay-meta{padding:0 0 14px}
+
+    .pay-parts{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:10px;
+    }
+
+    .amount-wrap{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .amount-wrap input{
+      width:170px;
+      height:42px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:0 12px;
+      outline:none;
+      text-align:right;
+      background:var(--paper-2);
+      color:var(--text);
+    }
+
+    .notes-meta{
+      padding:0 0 16px;
+      border-bottom:1px solid var(--line);
+    }
+
+    .notes-input{
+      width:100%;
+      min-height:78px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+      resize:vertical;
+      background:var(--paper-2);
+      color:var(--text);
+      font-size:14px;
+      line-height:1.6;
+    }
+
+    .read-mode .amount-wrap input,
+    .read-mode .notes-input{
+      border-color:transparent;
+      cursor:default;
+    }
+
+    .read-mode .notes-input::placeholder,
+    .read-mode .amount-wrap input::placeholder{color:transparent}
+
+    .editing .amount-wrap input,
+    .editing .notes-input{border-color:var(--beige);cursor:text}
+
+    .editing .amount-wrap input:focus,
+    .editing .notes-input:focus{
+      border-color:var(--brown);
+      box-shadow:0 0 0 3px rgba(117,92,73,.10);
+    }
+
+    /* CONTACT */
+    .contact-meta{padding-bottom:14px}
+    .contact-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+    .meta-field .contact-row input{width:210px;flex:none}
+    .call-btn{
+      height:42px;
+      display:inline-flex;
+      align-items:center;
+      padding:0 14px;
+      border:1px solid var(--beige);
+      border-radius:12px;
+      background:var(--paper);
+      color:var(--brown);
+      text-decoration:none;
+      font-size:13px;
+      font-weight:750;
+    }
+
+    /* STATS */
+    .stats-card{width:min(520px,100%)}
+    .period-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+    .period-chips button{
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:7px 12px;
+      background:var(--paper-2);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:750;
+      cursor:pointer;
+    }
+    .period-chips button.active{background:var(--brown);border-color:var(--brown);color:#fff}
+    body.dark .period-chips button.active{color:#241b16}
+    .range-row{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+    .range-row input{
+      flex:1;
+      min-width:0;
+      height:38px;
+      border:1px solid var(--line);
+      border-radius:11px;
+      padding:0 10px;
+      background:var(--paper-2);
+      color:var(--text);
+      outline:none;
+    }
+    .stats-range{margin:0 2px 10px;color:var(--muted);font-size:12px}
+    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .stat{border:1px solid var(--line);border-radius:14px;background:var(--paper-2);padding:12px 13px}
+    .stat.total{grid-column:1 / -1}
+    .stat span{display:block;color:var(--muted);font-size:11px;font-weight:750}
+    .stat strong{display:block;margin-top:4px;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+    .stat.total strong{font-size:26px;letter-spacing:-.02em}
+    .stat em{margin-left:4px;color:var(--muted);font-size:12px;font-style:normal;font-weight:650}
+    .stat-note{margin:8px 2px 0;color:var(--muted);font-size:11px;line-height:1.6}
+    .month-list{margin-top:16px;border-top:1px solid var(--line)}
+    .month-row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding:11px 2px;
+      border-bottom:1px solid var(--line);
+      font-size:13px;
+    }
+    .month-row b{font-weight:780}
+    .month-row .amt{text-align:right;font-variant-numeric:tabular-nums;font-weight:750}
+    .month-row small{display:block;margin-top:2px;color:var(--muted);font-size:11px;font-weight:600}
+    .btn-stack{display:grid;gap:8px}
+    .outline-btn{
+      width:100%;
+      border:1px solid var(--beige);
+      border-radius:13px;
+      padding:11px 14px;
+      background:var(--paper);
+      color:var(--brown);
+      cursor:pointer;
+      font-weight:800;
+    }
+    .stats-export{margin-top:16px}
+
+    .record-pay,
+    .record-note{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:12px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .birth-parts{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:7px;
+    }
+
+    .birth-part{
+      display:flex;
+      align-items:center;
+      gap:5px;
+    }
+
+    .birth-part input{
+      width:68px;
+      height:42px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:0 9px;
+      outline:none;
+      text-align:center;
+      background:var(--paper-2);
+      color:var(--text);
+    }
+
+    .birth-part.year input{
+      width:82px;
+    }
+
+    .birth-unit{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .editing .birth-part input{
+      border-color:var(--beige);
+      background:var(--paper-2);
+      cursor:text;
+    }
+
+    .editing .birth-part input:focus{
+      border-color:var(--brown);
+      box-shadow:0 0 0 3px rgba(117,92,73,.10);
+    }
+
+    .read-mode .birth-part input{
+      border-color:transparent;
+      background:var(--paper-2);
+      cursor:default;
+    }
+
+    .meta-field label{
+      display:block;
+      margin-bottom:6px;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:750;
+    }
+
+    .meta-field input{
+      width:100%;
+      height:42px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:0 12px;
+      outline:none;
+      background:var(--paper-2);
+      color:var(--text);
+    }
+
+    .content-input{
+      width:100%;
+      flex:1;
+      min-height:430px;
+      border:0;
+      outline:0;
+      resize:none;
+      background:transparent;
+      padding:20px 1px 12px;
+      color:var(--text);
+      font-size:16px;
+      line-height:1.82;
+    }
+
+    .content-input::placeholder{color:#b9aba0}
+
+    .read-mode .title-input,
+    .read-mode .content-input{
+      cursor:default;
+    }
+
+    .read-mode .meta-field input{
+      border-color:transparent;
+      background:var(--paper-2);
+      cursor:default;
+    }
+
+    .read-mode .title-input::placeholder,
+    .read-mode .content-input::placeholder{
+      color:transparent;
+    }
+
+    .editing .title-input,
+    .editing .content-input,
+    .editing .meta-field input{
+      cursor:text;
+    }
+
+    .editing .meta-field input:focus{
+      border-color:var(--brown);
+      box-shadow:0 0 0 3px rgba(117,92,73,.10);
+    }
+
+    .detail-footer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding-top:16px;
+    }
+
+    .save-status{
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    .delete-btn{
+      padding:9px 11px;
+      color:var(--danger);
+    }
+
+    /* SETTINGS MODAL */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      z-index:100;
+      display:grid;
+      place-items:center;
+      padding:18px;
+      background:var(--overlay);
+      backdrop-filter:blur(7px);
+    }
+
+    .settings-card{
+      max-height:calc(100vh - 36px);
+      overflow:auto;
+      width:min(430px,100%);
+      border:1px solid var(--line);
+      border-radius:24px;
+      background:var(--paper);
+      box-shadow:0 22px 60px rgba(0,0,0,.2);
+      padding:22px;
+    }
+
+    .settings-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:20px;
+    }
+
+    .settings-head h2{
+      margin:0;
+      font-size:21px;
+      letter-spacing:-.02em;
+    }
+
+    .close-btn{
+      width:36px;
+      height:36px;
+      border:0;
+      border-radius:50%;
+      background:var(--paper-2);
+      color:var(--muted);
+      cursor:pointer;
+      font-size:19px;
+    }
+
+    .setting-row{
+      padding:16px 0;
+      border-top:1px solid var(--line);
+    }
+
+    .setting-row:first-of-type{border-top:0}
+
+    .setting-row strong{
+      display:block;
+      margin-bottom:6px;
+      font-size:14px;
+    }
+
+    .setting-row p{
+      margin:0 0 12px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.6;
+    }
+
+    .danger-btn{
+      width:100%;
+      border:1px solid rgba(157,102,93,.35);
+      border-radius:13px;
+      padding:12px 14px;
+      background:rgba(157,102,93,.08);
+      color:var(--danger);
+      cursor:pointer;
+      font-weight:800;
+    }
+
+    .danger-btn:hover{
+      background:rgba(157,102,93,.14);
+    }
+
+    .games-btn{
+      display:block;
+      width:100%;
+      border:0;
+      border-radius:13px;
+      padding:12px 14px;
+      background:#D8D0EA;
+      color:#3e342d;
+      text-align:center;
+      text-decoration:none;
+      cursor:pointer;
+      font-weight:800;
+      transition:transform .15s ease, filter .15s ease;
+    }
+
+    .games-btn:hover{
+      transform:translateY(-1px);
+      filter:brightness(.97);
+    }
+
+    @media(max-width:640px){
+      .app{
+        width:min(100% - 20px,760px);
+        padding-top:18px;
+      }
+
+      .list-header{
+        align-items:flex-end;
+      }
+
+      .title-wrap h1{font-size:32px}
+      .add-btn{padding:11px 13px}
+
+      .search-panel{
+        grid-template-columns:1fr;
+      }
+
+      .clear-search{
+        height:38px;
+      }
+
+      .record{
+        padding:16px 50px 16px 16px;
+        border-radius:16px;
+      }
+
+      .detail{min-height:calc(100vh - 36px)}
+
+      .note-paper{
+        border-radius:20px;
+        padding:18px 16px;
+      }
+
+      .title-input{font-size:23px}
+
+      .meta{
+        grid-template-columns:1fr;
+      }
+
+      .birth-parts{
+        gap:6px 5px;
+      }
+
+      .birth-part input{
+        width:58px;
+      }
+
+      .birth-part.year input{
+        width:74px;
+      }
+
+      .amount-wrap input{width:150px}
+
+      .content-input{
+        min-height:48vh;
+      }
+
+      .header-actions{gap:6px}
+
+      .icon-btn,
+      .theme-btn{
+        width:39px;
+        height:39px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <h1>상담 로거</h1>
+        <p>Gmail과 비밀번호로 로그인하면<br>상담 기록이 계정에 동기화됩니다.</p>
+      </div>
+      <div class="auth-field"><label for="authEmail">Gmail</label><input id="authEmail" type="email" inputmode="email" autocomplete="email" placeholder="example@gmail.com"></div>
+      <div class="auth-field"><label for="authPassword">비밀번호</label><input id="authPassword" type="password" minlength="6" autocomplete="current-password" placeholder="6자 이상"></div>
+      <div class="auth-actions"><button id="loginBtn" class="auth-login" type="button">로그인</button><button id="signupBtn" class="auth-signup" type="button">회원가입</button></div>
+      <p id="authMessage" class="auth-message"></p>
+      <p class="auth-note">같은 계정으로 로그인하면 다른 기기에서도 같은 상담 기록을 볼 수 있습니다.</p>
+    </div>
+  </section>
+
+  <main id="mainApp" class="app" hidden>
+    <section id="listScreen" class="screen active">
+      <header class="list-header">
+        <div class="title-wrap">
+          <h1>상담 로거</h1>
+          <p>편하게 적고, 자동으로 저장해요.</p>
+        </div>
+
+        <div class="header-actions">
+          <button id="statsBtn" class="icon-btn" type="button" aria-label="매출 정리" title="매출 정리">₩</button>
+          <button id="settingsBtn" class="icon-btn" type="button" aria-label="설정" title="설정">⚙</button>
+          <button id="themeBtn" class="theme-btn" type="button" aria-label="다크모드 전환" title="다크모드 전환">☾</button>
+          <button id="addBtn" class="add-btn" type="button">+ 상담 추가</button>
+        </div>
+      </header>
+
+      <section class="search-panel" aria-label="상담 검색">
+        <input
+          id="searchInput"
+          class="search-input"
+          type="search"
+          placeholder="이름 또는 내용 검색"
+          autocomplete="off"
+        >
+        <input
+          id="searchDate"
+          class="search-date"
+          type="date"
+          aria-label="날짜로 검색"
+        >
+        <button id="clearSearchBtn" class="clear-search" type="button">초기화</button>
+      </section>
+
+      <p id="searchSummary" class="search-summary" hidden></p>
+
+      <div id="recordList" class="record-list"></div>
+
+      <div id="emptyState" class="empty" hidden>
+        <strong id="emptyTitle">아직 상담 기록이 없어요</strong>
+        <span id="emptyText">메모하듯 편하게 첫 기록을 남겨보세요.</span>
+        <br>
+        <button id="emptyAddBtn" type="button">첫 상담 작성</button>
+      </div>
+
+      <p class="bottom-note">
+        내용은 이 브라우저에 자동 저장됩니다.<br>
+        <span style="display:inline-block; margin-top:6px; color:var(--brown); font-weight:650;">
+          made by 정새싹게임즈's 정지호
+        </span>
+      </p>
+    </section>
+
+    <section id="detailScreen" class="screen">
+      <div id="detailWrap" class="detail read-mode">
+        <div class="detail-bar">
+          <div class="bar-left">
+            <button id="backBtn" class="ghost-btn" type="button">‹ 목록</button>
+          </div>
+
+          <div class="bar-right">
+            <button id="favoriteBtn" class="detail-favorite" type="button" aria-label="중요 상담 표시" title="중요 상담 표시">☆</button>
+            <button id="editBtn" class="edit-btn" type="button">편집</button>
+            <button id="doneBtn" class="primary-btn" type="button" hidden>완료</button>
+          </div>
+        </div>
+
+        <div class="note-paper">
+          <input
+            id="titleInput"
+            class="title-input"
+            type="text"
+            placeholder="상담 제목"
+            autocomplete="off"
+            readonly
+          >
+
+          <div class="meta">
+            <div class="meta-field">
+              <label for="counselorInput">상담자</label>
+              <input
+                id="counselorInput"
+                type="text"
+                placeholder="이름을 직접 입력하세요"
+                autocomplete="off"
+                list="counselorSuggestions"
+                readonly
+              >
+              <datalist id="counselorSuggestions"></datalist>
+            </div>
+
+            <div class="meta-field">
+              <label>성별</label>
+              <div class="seg" data-field="gender" role="group" aria-label="상담자 성별">
+                <button type="button" data-value="female" disabled>여성</button>
+                <button type="button" data-value="male" disabled>남성</button>
+              </div>
+            </div>
+
+            <div class="meta-field">
+              <label for="dateInput">상담 날짜</label>
+              <input id="dateInput" type="date" readonly>
+            </div>
+          </div>
+
+          <div class="meta-field contact-meta">
+            <label for="phoneInput">연락처</label>
+            <div class="contact-row">
+              <input id="phoneInput" type="tel" inputmode="tel" placeholder="010-0000-0000" autocomplete="off" readonly>
+              <a id="callBtn" class="call-btn" href="#" hidden>전화</a>
+              <a id="smsBtn" class="call-btn" href="#" hidden>문자</a>
+            </div>
+          </div>
+
+          <div class="birth-meta">
+            <div class="birth-head">
+              <span class="birth-label">상담자 생년생시</span>
+              <div class="seg small" data-field="calendar" role="group" aria-label="양력 음력 선택">
+                <button type="button" data-value="solar" disabled>양력</button>
+                <button type="button" data-value="lunar" disabled>음력</button>
+              </div>
+            </div>
+            <div class="birth-parts">
+              <label class="birth-part year">
+                <input id="birthYearInput" type="text" inputmode="numeric" maxlength="4" placeholder="1990" readonly>
+                <span class="birth-unit">년</span>
+              </label>
+              <label class="birth-part">
+                <input id="birthMonthInput" type="text" inputmode="numeric" maxlength="2" placeholder="01" readonly>
+                <span class="birth-unit">월</span>
+              </label>
+              <label class="birth-part">
+                <input id="birthDayInput" type="text" inputmode="numeric" maxlength="2" placeholder="01" readonly>
+                <span class="birth-unit">일</span>
+              </label>
+              <label class="birth-part">
+                <input id="birthHourInput" type="text" inputmode="numeric" maxlength="2" placeholder="12" readonly>
+                <span class="birth-unit">시</span>
+              </label>
+              <label class="birth-part">
+                <input id="birthMinuteInput" type="text" inputmode="numeric" maxlength="2" placeholder="30" readonly>
+                <span class="birth-unit">분</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="pay-meta">
+            <span class="birth-label">상담 금액</span>
+            <div class="pay-parts">
+              <label class="amount-wrap">
+                <input id="amountInput" type="text" inputmode="numeric" placeholder="50,000" autocomplete="off" readonly>
+                <span class="birth-unit">원</span>
+              </label>
+              <div class="seg" data-field="payment" role="group" aria-label="결제 방법">
+                <button type="button" data-value="cash" disabled>현금</button>
+                <button type="button" data-value="card" disabled>카드</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="notes-meta">
+            <label class="birth-label" for="notesInput">특이사항</label>
+            <textarea id="notesInput" class="notes-input" placeholder="특이사항을 적어주세요 (예: 재방문, 소개자, 주의할 점 등)" readonly></textarea>
+          </div>
+
+          <textarea
+            id="contentInput"
+            class="content-input"
+            placeholder="상담 내용을 편하게 적어주세요..."
+            readonly
+          ></textarea>
+
+          <div class="detail-footer">
+            <span id="saveStatus" class="save-status"></span>
+            <button id="deleteBtn" class="delete-btn" type="button">삭제</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="settingsModal" class="modal-backdrop" hidden>
+    <section class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="settings-head">
+        <h2 id="settingsTitle">설정</h2>
+        <button id="closeSettingsBtn" class="close-btn" type="button" aria-label="설정 닫기">×</button>
+      </div>
+
+      <div class="setting-row">
+        <strong>계정</strong>
+        <p>현재 로그인한 계정입니다. 상담 기록은 이 계정에 동기화됩니다.</p>
+        <div id="accountEmail" class="account-email">-</div>
+        <button id="logoutBtn" class="logout-btn" type="button">로그아웃</button>
+      </div>
+
+      <div class="setting-row">
+        <strong>이 개발자가 만든 게임들을 보고싶다면?</strong>
+        <p>정새싹게임즈의 다른 게임들을 확인할 수 있습니다.</p>
+        <a
+          class="games-btn"
+          href="https://www.정새싹게임즈.서버.한국"
+        >게임 보러가기</a>
+      </div>
+
+      <div class="setting-row">
+        <strong>엑셀 내보내기 · 백업</strong>
+        <p>전체 상담 기록을 엑셀에서 열 수 있는 파일(CSV)로 받거나, 백업 파일로 저장했다가 다시 불러올 수 있습니다. 불러오면 기존 기록은 그대로 두고 빠진 기록만 채워 넣습니다.</p>
+        <div class="btn-stack">
+          <button id="exportCsvBtn" class="outline-btn" type="button">엑셀 파일로 내보내기</button>
+          <button id="backupBtn" class="outline-btn" type="button">백업 파일 저장</button>
+          <button id="restoreBtn" class="outline-btn" type="button">백업 파일 불러오기</button>
+          <input id="restoreFile" type="file" accept=".json,application/json" hidden>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <strong>데이터 관리</strong>
+        <p>저장된 모든 상담 기록을 이 브라우저에서 삭제합니다. 삭제한 데이터는 복구할 수 없습니다.</p>
+        <button id="deleteAllBtn" class="danger-btn" type="button">모든 데이터 지우기</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="statsModal" class="modal-backdrop" hidden>
+    <section class="settings-card stats-card" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+      <div class="settings-head">
+        <h2 id="statsTitle">매출 정리</h2>
+        <button id="closeStatsBtn" class="close-btn" type="button" aria-label="매출 정리 닫기">×</button>
+      </div>
+
+      <div id="periodChips" class="period-chips" role="group" aria-label="기간 선택">
+        <button type="button" data-period="month" class="active">이번 달</button>
+        <button type="button" data-period="lastMonth">지난달</button>
+        <button type="button" data-period="year">올해</button>
+        <button type="button" data-period="all">전체</button>
+        <button type="button" data-period="custom">기간 직접</button>
+      </div>
+
+      <div id="rangeRow" class="range-row" hidden>
+        <input id="rangeFrom" type="date" aria-label="시작일">
+        <span class="birth-unit">~</span>
+        <input id="rangeTo" type="date" aria-label="종료일">
+      </div>
+
+      <div id="statsBody"></div>
+
+      <button id="statsExportBtn" class="outline-btn stats-export" type="button">이 기간 엑셀 파일로 받기</button>
+    </section>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+    (() => {
+      const firebaseConfig = {
+        apiKey: "AIzaSyBO3vOdvpExQptUQM5bAdHJYGjxmam3wF0",
+        authDomain: "sangdamloger.firebaseapp.com",
+        projectId: "sangdamloger",
+        storageBucket: "sangdamloger.firebasestorage.app",
+        messagingSenderId: "514908722042",
+        appId: "1:514908722042:web:e7125cdc8a0d6d4fe07cc3",
+        measurementId: "G-9ZRECT5ZQM"
+      };
+      const firebaseApp = initializeApp(firebaseConfig);
+      const auth = getAuth(firebaseApp);
+      const db = getFirestore(firebaseApp);
+      const LEGACY_STORAGE_KEY = "consultationLogger.records.v1";
+      const USER_CACHE_PREFIX = "consultationLogger.records.cloudcache.";
+      const LEGACY_MIGRATION_KEY = "consultationLogger.legacyMigrated.v1";
+      const THEME_KEY = "consultationLogger.theme.v1";
+
+      const authScreen = document.getElementById("authScreen");
+      const mainApp = document.getElementById("mainApp");
+      const authEmail = document.getElementById("authEmail");
+      const authPassword = document.getElementById("authPassword");
+      const loginBtn = document.getElementById("loginBtn");
+      const signupBtn = document.getElementById("signupBtn");
+      const authMessage = document.getElementById("authMessage");
+      const accountEmail = document.getElementById("accountEmail");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      const listScreen = document.getElementById("listScreen");
+      const detailScreen = document.getElementById("detailScreen");
+      const detailWrap = document.getElementById("detailWrap");
+      const recordList = document.getElementById("recordList");
+      const emptyState = document.getElementById("emptyState");
+      const emptyTitle = document.getElementById("emptyTitle");
+      const emptyText = document.getElementById("emptyText");
+
+      const settingsBtn = document.getElementById("settingsBtn");
+      const settingsModal = document.getElementById("settingsModal");
+      const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+      const deleteAllBtn = document.getElementById("deleteAllBtn");
+
+      const themeBtn = document.getElementById("themeBtn");
+      const addBtn = document.getElementById("addBtn");
+      const emptyAddBtn = document.getElementById("emptyAddBtn");
+      const backBtn = document.getElementById("backBtn");
+      const favoriteBtn = document.getElementById("favoriteBtn");
+      const editBtn = document.getElementById("editBtn");
+      const doneBtn = document.getElementById("doneBtn");
+      const deleteBtn = document.getElementById("deleteBtn");
+
+      const searchInput = document.getElementById("searchInput");
+      const searchDate = document.getElementById("searchDate");
+      const clearSearchBtn = document.getElementById("clearSearchBtn");
+      const searchSummary = document.getElementById("searchSummary");
+
+      const titleInput = document.getElementById("titleInput");
+      const counselorInput = document.getElementById("counselorInput");
+      const counselorSuggestions = document.getElementById("counselorSuggestions");
+      const dateInput = document.getElementById("dateInput");
+      const birthYearInput = document.getElementById("birthYearInput");
+      const birthMonthInput = document.getElementById("birthMonthInput");
+      const birthDayInput = document.getElementById("birthDayInput");
+      const birthHourInput = document.getElementById("birthHourInput");
+      const birthMinuteInput = document.getElementById("birthMinuteInput");
+      const contentInput = document.getElementById("contentInput");
+      const amountInput = document.getElementById("amountInput");
+      const notesInput = document.getElementById("notesInput");
+      const segGroups = [...document.querySelectorAll(".seg[data-field]")];
+      const phoneInput = document.getElementById("phoneInput");
+      const callBtn = document.getElementById("callBtn");
+      const smsBtn = document.getElementById("smsBtn");
+
+      const statsBtn = document.getElementById("statsBtn");
+      const statsModal = document.getElementById("statsModal");
+      const closeStatsBtn = document.getElementById("closeStatsBtn");
+      const periodChips = document.getElementById("periodChips");
+      const rangeRow = document.getElementById("rangeRow");
+      const rangeFrom = document.getElementById("rangeFrom");
+      const rangeTo = document.getElementById("rangeTo");
+      const statsBody = document.getElementById("statsBody");
+      const statsExportBtn = document.getElementById("statsExportBtn");
+
+      const exportCsvBtn = document.getElementById("exportCsvBtn");
+      const backupBtn = document.getElementById("backupBtn");
+      const restoreBtn = document.getElementById("restoreBtn");
+      const restoreFile = document.getElementById("restoreFile");
+      let statsPeriod = "month";
+      const saveStatus = document.getElementById("saveStatus");
+
+      const LABELS = {
+        gender: { female: "여성", male: "남성" },
+        calendar: { solar: "양력", lunar: "음력" },
+        payment: { cash: "현금", card: "카드" }
+      };
+
+      let records = [];
+      let currentUser = null;
+      let unsubscribeRecords = null;
+      let currentId = null;
+      let isEditing = false;
+      let saveTimer = null;
+
+      function applyTheme(theme) {
+        const isDark = theme === "dark";
+        document.body.classList.toggle("dark", isDark);
+        themeBtn.textContent = isDark ? "☀" : "☾";
+        themeBtn.setAttribute("aria-label", isDark ? "라이트모드 전환" : "다크모드 전환");
+        themeBtn.title = isDark ? "라이트모드 전환" : "다크모드 전환";
+      }
+
+      function loadTheme() {
+        const saved = localStorage.getItem(THEME_KEY);
+        if (saved === "dark" || saved === "light") {
+          applyTheme(saved);
+          return;
+        }
+
+        const prefersDark = window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+        applyTheme(prefersDark ? "dark" : "light");
+      }
+
+      function toggleTheme() {
+        const next = document.body.classList.contains("dark") ? "light" : "dark";
+        localStorage.setItem(THEME_KEY, next);
+        applyTheme(next);
+      }
+
+      function uid() {
+        if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+        return Date.now().toString(36) + Math.random().toString(36).slice(2);
+      }
+
+      function today() {
+        const d = new Date();
+        const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 10);
+      }
+
+      function userCacheKey(uid = currentUser?.uid) {
+        return uid ? `${USER_CACHE_PREFIX}${uid}` : null;
+      }
+
+      function normalizeRecord(record = {}) {
+        return {
+          id: record.id || uid(),
+          title: record.title || "",
+          counselor: record.counselor || "",
+          content: record.content || "",
+          date: record.date || today(),
+          birthDate: record.birthDate || "",
+          birthTime: record.birthTime || "",
+          gender: record.gender || "",
+          calendar: record.calendar || "solar",
+          amount: String(record.amount || "").replace(/\D/g, ""),
+          payment: record.payment || "",
+          notes: record.notes || "",
+          phone: record.phone || "",
+          favorite: !!record.favorite,
+          createdAt: record.createdAt || Date.now(),
+          updatedAt: record.updatedAt || Date.now()
+        };
+      }
+
+      function formatPhone(value) {
+        const d = String(value || "").replace(/\D/g, "").slice(0, 11);
+        if (d.startsWith("02")) {
+          if (d.length <= 2) return d;
+          if (d.length <= 5) return `${d.slice(0,2)}-${d.slice(2)}`;
+          if (d.length <= 9) return `${d.slice(0,2)}-${d.slice(2, d.length - 4)}-${d.slice(-4)}`;
+          return `${d.slice(0,2)}-${d.slice(2,6)}-${d.slice(6,10)}`;
+        }
+        if (d.length <= 3) return d;
+        if (d.length <= 7) return `${d.slice(0,3)}-${d.slice(3)}`;
+        if (d.length <= 10) return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;
+        return `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`;
+      }
+
+      function updateContactLinks(phone) {
+        const d = String(phone || "").replace(/\D/g, "");
+        const ok = d.length >= 9;
+        callBtn.hidden = !ok;
+        smsBtn.hidden = !ok;
+        callBtn.href = ok ? `tel:${d}` : "#";
+        smsBtn.href = ok ? `sms:${d}` : "#";
+      }
+
+      /* ---------- 매출 정리 ---------- */
+      function pad2(n) { return String(n).padStart(2, "0"); }
+
+      function periodRange(period) {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = now.getMonth() + 1;
+        if (period === "month") return { from: `${y}-${pad2(m)}-01`, to: `${y}-${pad2(m)}-31` };
+        if (period === "lastMonth") {
+          const ly = m === 1 ? y - 1 : y;
+          const lm = m === 1 ? 12 : m - 1;
+          return { from: `${ly}-${pad2(lm)}-01`, to: `${ly}-${pad2(lm)}-31` };
+        }
+        if (period === "year") return { from: `${y}-01-01`, to: `${y}-12-31` };
+        if (period === "custom") return { from: rangeFrom.value || "", to: rangeTo.value || "" };
+        return { from: "", to: "" };
+      }
+
+      function recordsInRange(range) {
+        return records
+          .filter(r => (!range.from || (r.date || "") >= range.from) && (!range.to || (r.date || "") <= range.to))
+          .sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.createdAt || 0) - (b.createdAt || 0));
+      }
+
+      function sumUp(list) {
+        const s = { count: list.length, total: 0, cash: 0, cashN: 0, card: 0, cardN: 0, none: 0, noneN: 0, noAmount: 0 };
+        list.forEach(r => {
+          const a = Number(r.amount || 0);
+          if (!a) s.noAmount++;
+          s.total += a;
+          if (r.payment === "cash") { s.cash += a; s.cashN++; }
+          else if (r.payment === "card") { s.card += a; s.cardN++; }
+          else if (a) { s.none += a; s.noneN++; }
+        });
+        return s;
+      }
+
+      function won(n) { return `${Number(n || 0).toLocaleString("ko-KR")}원`; }
+
+      function renderStats() {
+        periodChips.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.period === statsPeriod));
+        rangeRow.hidden = statsPeriod !== "custom";
+
+        const range = periodRange(statsPeriod);
+        const list = recordsInRange(range);
+        const s = sumUp(list);
+
+        let rangeText = "전체 기간";
+        if (statsPeriod === "month" || statsPeriod === "lastMonth") rangeText = `${range.from.slice(0,4)}년 ${Number(range.from.slice(5,7))}월`;
+        else if (statsPeriod === "year") rangeText = `${range.from.slice(0,4)}년`;
+        else if (statsPeriod === "custom") rangeText = (range.from || range.to) ? `${formatDate(range.from) || "처음"} ~ ${formatDate(range.to) || "오늘"}` : "기간을 선택하세요";
+
+        const months = new Map();
+        list.forEach(r => {
+          const key = (r.date || "").slice(0, 7);
+          if (!key) return;
+          if (!months.has(key)) months.set(key, []);
+          months.get(key).push(r);
+        });
+        const monthRows = [...months.entries()]
+          .sort((a, b) => b[0].localeCompare(a[0]))
+          .map(([key, items]) => {
+            const ms = sumUp(items);
+            return `<div class="month-row">
+              <div><b>${key.slice(0,4)}.${key.slice(5,7)}</b><small>${ms.count}건</small></div>
+              <div class="amt">${won(ms.total)}<small>현금 ${won(ms.cash)} · 카드 ${won(ms.card)}</small></div>
+            </div>`;
+          }).join("");
+
+        statsBody.innerHTML = `
+          <p class="stats-range">${escapeHtml(rangeText)}</p>
+          <div class="stat-grid">
+            <div class="stat total"><span>총 매출</span><strong>${won(s.total)}</strong></div>
+            <div class="stat"><span>상담 건수</span><strong>${s.count}건</strong></div>
+            <div class="stat"><span>건당 평균</span><strong>${won(s.count - s.noAmount > 0 ? Math.round(s.total / (s.count - s.noAmount)) : 0)}</strong></div>
+            <div class="stat"><span>현금</span><strong>${won(s.cash)}<em>${s.cashN}건</em></strong></div>
+            <div class="stat"><span>카드</span><strong>${won(s.card)}<em>${s.cardN}건</em></strong></div>
+          </div>
+          ${(s.noneN || s.noAmount) ? `<p class="stat-note">${[
+            s.noneN ? `결제 방법 미선택 ${s.noneN}건 (${won(s.none)})` : "",
+            s.noAmount ? `금액 미입력 ${s.noAmount}건` : ""
+          ].filter(Boolean).join(" · ")}</p>` : ""}
+          ${months.size > 1 ? `<div class="month-list">${monthRows}</div>` : ""}
+          ${!list.length ? `<p class="stat-note">이 기간에는 상담 기록이 없습니다.</p>` : ""}
+        `;
+        statsExportBtn.disabled = !list.length;
+      }
+
+      function openStats() {
+        if (isEditing) saveCurrent();
+        renderStats();
+        statsModal.hidden = false;
+      }
+
+      function closeStats() { statsModal.hidden = true; }
+
+      /* ---------- 내보내기 · 백업 ---------- */
+      function downloadFile(filename, content, type) {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
+
+      function csvCell(value) {
+        const s = String(value ?? "");
+        return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      }
+
+      function exportCsv(list, label) {
+        if (!list.length) { alert("내보낼 상담 기록이 없습니다."); return; }
+        const header = ["상담 날짜","제목","상담자","성별","연락처","양력/음력","생년월일","생시","금액","결제 방법","특이사항","상담 내용","중요"];
+        const rows = list.map(r => [
+          r.date || "",
+          r.title || "",
+          r.counselor || "",
+          LABELS.gender[r.gender] || "",
+          r.phone || "",
+          r.birthDate ? (LABELS.calendar[r.calendar] || "양력") : "",
+          r.birthDate || "",
+          r.birthTime || "",
+          r.amount ? Number(r.amount) : "",
+          LABELS.payment[r.payment] || "",
+          r.notes || "",
+          r.content || "",
+          r.favorite ? "★" : ""
+        ]);
+        const csv = "﻿" + [header, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n");
+        downloadFile(`sangdam_${label}_${today()}.csv`, csv, "text/csv;charset=utf-8");
+      }
+
+      function exportAllCsv() {
+        exportCsv(recordsInRange({ from: "", to: "" }), "all");
+      }
+
+      function exportStatsCsv() {
+        const range = periodRange(statsPeriod);
+        let label = "all";
+        if (statsPeriod === "month" || statsPeriod === "lastMonth") label = range.from.slice(0, 7);
+        else if (statsPeriod === "year") label = range.from.slice(0, 4);
+        else if (statsPeriod === "custom") label = `${range.from || "start"}_to_${range.to || "end"}`;
+        exportCsv(recordsInRange(range), label);
+      }
+
+      function saveBackup() {
+        if (!records.length) { alert("저장할 상담 기록이 없습니다."); return; }
+        const data = {
+          app: "consultation-logger",
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          count: records.length,
+          records: records.map(normalizeRecord)
+        };
+        downloadFile(`sangdam_backup_${today()}.json`, JSON.stringify(data, null, 2), "application/json");
+      }
+
+      async function restoreBackup(file) {
+        if (!file) return;
+        let incoming;
+        try {
+          const parsed = JSON.parse(await file.text());
+          incoming = Array.isArray(parsed) ? parsed : parsed.records;
+          if (!Array.isArray(incoming)) throw new Error("bad format");
+        } catch {
+          alert("백업 파일을 읽을 수 없습니다. 상담 로거에서 저장한 백업 파일(.json)인지 확인해주세요.");
+          return;
+        }
+
+        const byId = new Map(records.map(r => [r.id, r]));
+        const toSave = [];
+        incoming.map(normalizeRecord).forEach(r => {
+          const existing = byId.get(r.id);
+          if (!existing || (r.updatedAt || 0) > (existing.updatedAt || 0)) toSave.push(r);
+        });
+
+        if (!toSave.length) { alert("새로 추가할 기록이 없습니다. 이미 모두 들어 있어요."); return; }
+        if (!confirm(`백업 파일에서 ${toSave.length}개의 기록을 불러올까요?`)) return;
+
+        toSave.forEach(r => {
+          const i = records.findIndex(x => x.id === r.id);
+          if (i >= 0) records[i] = r; else records.push(r);
+        });
+        saveLocalMirror();
+        renderCounselorSuggestions();
+        renderList();
+
+        try {
+          if (currentUser) await Promise.all(toSave.map(r => saveRecordToCloud(r)));
+          alert(`${toSave.length}개의 기록을 불러왔습니다.`);
+        } catch (error) {
+          console.error("Restore sync failed:", error);
+          alert("기록은 불러왔지만 계정 동기화 중 오류가 났습니다. 인터넷 연결을 확인해주세요.");
+        }
+      }
+
+      function formatAmount(digits) {
+        return digits ? Number(digits).toLocaleString("ko-KR") : "";
+      }
+
+      function updateSeg(field, value) {
+        const group = segGroups.find(g => g.dataset.field === field);
+        if (!group) return;
+        group.querySelectorAll("button").forEach(btn => {
+          const on = btn.dataset.value === value;
+          btn.classList.toggle("active", on);
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+
+      function loadJsonRecords(key) {
+        if (!key) return [];
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+          return Array.isArray(parsed) ? parsed.map(normalizeRecord) : [];
+        } catch { return []; }
+      }
+
+      function saveLocalMirror() {
+        const key = userCacheKey();
+        if (!key) return;
+        try { localStorage.setItem(key, JSON.stringify(records)); } catch {}
+      }
+
+      async function saveRecordToCloud(record) {
+        if (!currentUser || !record) return;
+        await setDoc(doc(db, "users", currentUser.uid, "consultations", record.id), normalizeRecord(record), { merge: true });
+      }
+
+      async function migrateLegacyRecordsOnce(user) {
+        if (!user || localStorage.getItem(LEGACY_MIGRATION_KEY) === "1") return;
+        const legacyRecords = loadJsonRecords(LEGACY_STORAGE_KEY);
+        if (legacyRecords.length) {
+          await Promise.all(legacyRecords.map(record => setDoc(doc(db, "users", user.uid, "consultations", record.id), normalizeRecord(record), { merge: true })));
+        }
+        localStorage.setItem(LEGACY_MIGRATION_KEY, "1");
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
+
+      function startCloudSync(user) {
+        if (unsubscribeRecords) unsubscribeRecords();
+        const ref = collection(db, "users", user.uid, "consultations");
+        unsubscribeRecords = onSnapshot(ref, snapshot => {
+          records = snapshot.docs.map(item => normalizeRecord({ id: item.id, ...item.data() }));
+          saveLocalMirror();
+          renderCounselorSuggestions();
+          if (listScreen.classList.contains("active")) renderList();
+        }, error => {
+          console.error("Firestore sync error:", error);
+          if (mainApp.hidden === false) alert("데이터 동기화에 실패했습니다. Firestore 설정을 확인해주세요.");
+        });
+      }
+
+      async function saveNow(recordOverride = null) {
+        const record = recordOverride || getCurrent();
+        saveLocalMirror();
+        if (currentUser && record) {
+          try { await saveRecordToCloud(record); }
+          catch (error) { console.error("Cloud save failed:", error); saveStatus.textContent = "동기화 실패"; return; }
+        }
+        if (isEditing) {
+          saveStatus.textContent = "저장됨";
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(() => { if (isEditing) saveStatus.textContent = "자동 저장"; }, 900);
+        }
+      }
+
+      function scheduleSave() {
+        if (!isEditing) return;
+        saveStatus.textContent = "저장 중…";
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => saveNow(getCurrent()), 180);
+      }
+
+      function getCurrent() {
+        return records.find(r => r.id === currentId);
+      }
+
+      function escapeHtml(value = "") {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function formatDate(value) {
+        if (!value) return "";
+        const [y,m,d] = value.split("-");
+        return `${y}.${m}.${d}`;
+      }
+
+      function splitBirthDate(value) {
+        const [year = "", month = "", day = ""] = (value || "").split("-");
+        return { year, month, day };
+      }
+
+      function splitBirthTime(value) {
+        const [hour = "", minute = ""] = (value || "").split(":");
+        return { hour, minute };
+      }
+
+      function onlyDigits(value, maxLength) {
+        return String(value || "").replace(/\D/g, "").slice(0, maxLength);
+      }
+
+      function clampPart(value, min, max) {
+        if (!value) return "";
+        const n = Number(value);
+        if (!Number.isFinite(n)) return "";
+        return String(Math.min(max, Math.max(min, n))).padStart(2, "0");
+      }
+
+      function composeBirthDate() {
+        const y = onlyDigits(birthYearInput.value, 4);
+        const m = onlyDigits(birthMonthInput.value, 2);
+        const d = onlyDigits(birthDayInput.value, 2);
+
+        if (!y && !m && !d) return "";
+        if (y.length !== 4 || !m || !d) return "";
+
+        return `${y}-${clampPart(m, 1, 12)}-${clampPart(d, 1, 31)}`;
+      }
+
+      function composeBirthTime() {
+        const h = onlyDigits(birthHourInput.value, 2);
+        const m = onlyDigits(birthMinuteInput.value, 2);
+
+        if (!h && !m) return "";
+        if (!h || !m) return "";
+
+        return `${clampPart(h, 0, 23)}:${clampPart(m, 0, 59)}`;
+      }
+
+      function syncBirthParts() {
+        if (!isEditing) return;
+
+        const record = getCurrent();
+        if (!record) return;
+
+        record.birthDate = composeBirthDate();
+        record.birthTime = composeBirthTime();
+        record.updatedAt = Date.now();
+        scheduleSave();
+      }
+
+      function formatBirth(record) {
+        if (!record.birthDate && !record.birthTime) return "";
+        const date = record.birthDate ? formatDate(record.birthDate) : "생년월일 미입력";
+        const time = record.birthTime ? ` ${record.birthTime}` : "";
+        const cal = record.birthDate ? `(${LABELS.calendar[record.calendar] || "양력"}) ` : "";
+        return `${cal}${date}${time}`;
+      }
+
+      // 같은 이름의 지난 상담들에서 항목별로 가장 최근에 입력된 값을 모음 (지금 편집 중인 기록은 제외)
+      function getCounselorProfiles(excludeId = null) {
+        const profiles = new Map();
+
+        [...records]
+          .sort((a,b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
+          .forEach(record => {
+            if (excludeId && record.id === excludeId) return;
+            const name = (record.counselor || "").trim();
+            if (!name) return;
+
+            const key = name.toLowerCase();
+            if (!profiles.has(key)) {
+              profiles.set(key, { name, birthDate: "", birthTime: "", gender: "", calendar: "solar", phone: "" });
+            }
+            const p = profiles.get(key);
+            if (!p.birthDate && record.birthDate) {
+              p.birthDate = record.birthDate;
+              p.calendar = record.calendar || "solar";
+            }
+            if (!p.birthTime && record.birthTime) p.birthTime = record.birthTime;
+            if (!p.gender && record.gender) p.gender = record.gender;
+            if (!p.phone && record.phone) p.phone = record.phone;
+          });
+
+        return [...profiles.values()];
+      }
+
+      function renderCounselorSuggestions() {
+        const profiles = getCounselorProfiles();
+        counselorSuggestions.innerHTML = profiles
+          .map(profile => `<option value="${escapeHtml(profile.name)}"></option>`)
+          .join("");
+      }
+
+      function autofillCounselorBirthInfo() {
+        if (!isEditing) return;
+
+        const name = counselorInput.value.trim().toLowerCase();
+        if (!name) return;
+
+        const profile = getCounselorProfiles(currentId)
+          .find(item => item.name.toLowerCase() === name);
+
+        if (!profile) return;
+
+        const record = getCurrent();
+        if (!record) return;
+
+        let changed = false;
+
+        if (profile.birthDate && record.birthDate !== profile.birthDate) {
+          const dateParts = splitBirthDate(profile.birthDate);
+          birthYearInput.value = dateParts.year;
+          birthMonthInput.value = dateParts.month;
+          birthDayInput.value = dateParts.day;
+          record.birthDate = profile.birthDate;
+          changed = true;
+        }
+
+        if (profile.birthTime && record.birthTime !== profile.birthTime) {
+          const timeParts = splitBirthTime(profile.birthTime);
+          birthHourInput.value = timeParts.hour;
+          birthMinuteInput.value = timeParts.minute;
+          record.birthTime = profile.birthTime;
+          changed = true;
+        }
+
+        if (profile.birthDate && record.calendar !== profile.calendar) {
+          record.calendar = profile.calendar;
+          updateSeg("calendar", record.calendar);
+          changed = true;
+        }
+
+        if (profile.gender && record.gender !== profile.gender) {
+          record.gender = profile.gender;
+          updateSeg("gender", record.gender);
+          changed = true;
+        }
+
+        if (profile.phone && !record.phone) {
+          record.phone = profile.phone;
+          phoneInput.value = profile.phone;
+          updateContactLinks(profile.phone);
+          changed = true;
+        }
+
+        if (changed) {
+          record.updatedAt = Date.now();
+          scheduleSave();
+        }
+      }
+
+      function toggleFavorite(id) {
+        const record = records.find(r => r.id === id);
+        if (!record) return;
+
+        record.favorite = !record.favorite;
+        record.updatedAt = Date.now();
+        saveNow(record);
+
+        if (currentId === id) {
+          updateFavoriteButton(record.favorite);
+        }
+
+        renderList();
+      }
+
+      function updateFavoriteButton(isFavorite) {
+        favoriteBtn.classList.toggle("active", !!isFavorite);
+        favoriteBtn.textContent = isFavorite ? "★" : "☆";
+        favoriteBtn.setAttribute(
+          "aria-label",
+          isFavorite ? "중요 상담 해제" : "중요 상담 표시"
+        );
+        favoriteBtn.title = isFavorite ? "중요 상담 해제" : "중요 상담 표시";
+      }
+
+      function getFilteredRecords() {
+        const query = searchInput.value.trim().toLowerCase();
+        const date = searchDate.value;
+
+        return [...records]
+          .filter(record => {
+            const textTarget = [
+              record.title || "",
+              record.counselor || "",
+              record.content || "",
+              record.notes || "",
+              record.phone || ""
+            ].join(" ").toLowerCase();
+
+            const queryDigits = query.replace(/\D/g, "");
+            const phoneMatch = queryDigits.length >= 3 && queryDigits === query.replace(/[\s-]/g, "") &&
+              (record.phone || "").replace(/\D/g, "").includes(queryDigits);
+            const textMatch = !query || textTarget.includes(query) || phoneMatch;
+            const dateMatch = !date || record.date === date;
+
+            return textMatch && dateMatch;
+          })
+          .sort((a,b) => {
+            if (!!a.favorite !== !!b.favorite) {
+              return a.favorite ? -1 : 1;
+            }
+
+            const at = a.updatedAt || a.createdAt || 0;
+            const bt = b.updatedAt || b.createdAt || 0;
+            return bt - at;
+          });
+      }
+
+      function renderList() {
+        const filtered = getFilteredRecords();
+        const hasSearch = !!(searchInput.value.trim() || searchDate.value);
+
+        searchSummary.hidden = !hasSearch;
+        if (hasSearch) {
+          searchSummary.textContent = `검색 결과 ${filtered.length}개`;
+        }
+
+        if (records.length === 0) {
+          emptyState.hidden = false;
+          emptyTitle.textContent = "아직 상담 기록이 없어요";
+          emptyText.textContent = "메모하듯 편하게 첫 기록을 남겨보세요.";
+          emptyAddBtn.hidden = false;
+        } else if (filtered.length === 0) {
+          emptyState.hidden = false;
+          emptyTitle.textContent = "검색 결과가 없어요";
+          emptyText.textContent = "검색어 또는 날짜를 바꿔보세요.";
+          emptyAddBtn.hidden = true;
+        } else {
+          emptyState.hidden = true;
+        }
+
+        recordList.innerHTML = filtered.map(record => {
+          const title = (record.title || "").trim() || "제목 없는 상담";
+          const counselor = (record.counselor || "").trim();
+          const preview = (record.content || "").trim() || "내용이 없습니다.";
+          const birth = formatBirth(record);
+          const gender = LABELS.gender[record.gender] || "";
+          const person = [counselor, gender, record.phone || ""].filter(Boolean).join(" · ");
+          const payParts = [];
+          if (record.amount) payParts.push(`${formatAmount(record.amount)}원`);
+          if (LABELS.payment[record.payment]) payParts.push(LABELS.payment[record.payment]);
+          const pay = payParts.join(" · ");
+          const notes = (record.notes || "").trim().replace(/\s+/g, " ");
+
+          return `
+            <article
+              class="record"
+              data-id="${escapeHtml(record.id)}"
+              role="button"
+              tabindex="0"
+              aria-label="${escapeHtml(title)} 상담 열기"
+            >
+              <button
+                class="favorite-toggle ${record.favorite ? "active" : ""}"
+                type="button"
+                data-action="favorite"
+                aria-label="${record.favorite ? "중요 상담 해제" : "중요 상담 표시"}"
+                title="${record.favorite ? "중요 상담 해제" : "중요 상담 표시"}"
+              >${record.favorite ? "★" : "☆"}</button>
+
+              <div class="record-top">
+                <h2 class="record-title">${escapeHtml(title)}</h2>
+                <span class="record-date">${escapeHtml(formatDate(record.date))}</span>
+              </div>
+              ${person ? `<div class="record-person">${escapeHtml(person)}</div>` : ""}
+              ${birth ? `<div class="record-birth">생년생시 · ${escapeHtml(birth)}</div>` : ""}
+              ${pay ? `<div class="record-pay">금액 · ${escapeHtml(pay)}</div>` : ""}
+              ${notes ? `<div class="record-note">특이사항 · ${escapeHtml(notes)}</div>` : ""}
+              <p class="record-preview">${escapeHtml(preview)}</p>
+            </article>
+          `;
+        }).join("");
+      }
+
+      function setEditing(editing) {
+        isEditing = editing;
+
+        const fields = [
+          titleInput,
+          counselorInput,
+          dateInput,
+          birthYearInput,
+          birthMonthInput,
+          birthDayInput,
+          birthHourInput,
+          birthMinuteInput,
+          amountInput,
+          notesInput,
+          phoneInput,
+          contentInput
+        ];
+
+        segGroups.forEach(group => {
+          group.querySelectorAll("button").forEach(btn => { btn.disabled = !editing; });
+        });
+
+        fields.forEach(field => {
+          field.readOnly = !editing;
+
+          if (editing) {
+            field.removeAttribute("readonly");
+          } else {
+            field.setAttribute("readonly", "");
+          }
+        });
+
+        detailWrap.classList.toggle("editing", editing);
+        detailWrap.classList.toggle("read-mode", !editing);
+
+        editBtn.hidden = editing;
+        doneBtn.hidden = !editing;
+        saveStatus.textContent = editing ? "자동 저장" : "";
+
+        if (editing) {
+          setTimeout(() => {
+            if (!titleInput.value && !contentInput.value) titleInput.focus();
+          }, 30);
+        }
+      }
+
+      function openRecord(id, editImmediately = false) {
+        currentId = id;
+        const record = getCurrent();
+        if (!record) return;
+
+        titleInput.value = record.title || "";
+        counselorInput.value = record.counselor || "";
+        dateInput.value = record.date || today();
+
+        const birthDateParts = splitBirthDate(record.birthDate || "");
+        const birthTimeParts = splitBirthTime(record.birthTime || "");
+
+        birthYearInput.value = birthDateParts.year;
+        birthMonthInput.value = birthDateParts.month;
+        birthDayInput.value = birthDateParts.day;
+        birthHourInput.value = birthTimeParts.hour;
+        birthMinuteInput.value = birthTimeParts.minute;
+
+        contentInput.value = record.content || "";
+        amountInput.value = formatAmount(record.amount);
+        notesInput.value = record.notes || "";
+        phoneInput.value = record.phone || "";
+        updateContactLinks(record.phone);
+        updateSeg("gender", record.gender || "");
+        updateSeg("calendar", record.calendar || "solar");
+        updateSeg("payment", record.payment || "");
+        updateFavoriteButton(!!record.favorite);
+        renderCounselorSuggestions();
+
+        listScreen.classList.remove("active");
+        detailScreen.classList.add("active");
+        setEditing(editImmediately);
+
+        window.scrollTo({top: 0, behavior: "instant"});
+      }
+
+      function addRecord() {
+        const id = uid();
+
+        records.push({
+          id,
+          title: "",
+          counselor: "",
+          content: "",
+          date: today(),
+          birthDate: "",
+          birthTime: "",
+          gender: "",
+          calendar: "solar",
+          amount: "",
+          payment: "",
+          notes: "",
+          phone: "",
+          favorite: false,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
+
+        saveNow(records.find(r => r.id === id));
+        openRecord(id, true);
+      }
+
+      function syncField(field, value) {
+        if (!isEditing) return;
+
+        const record = getCurrent();
+        if (!record) return;
+
+        record[field] = value;
+        record.updatedAt = Date.now();
+        scheduleSave();
+      }
+
+      function saveCurrent() {
+        if (!currentId || !isEditing) return;
+
+        const record = getCurrent();
+        if (!record) return;
+
+        record.title = titleInput.value;
+        record.counselor = counselorInput.value;
+        record.date = dateInput.value;
+        record.birthDate = composeBirthDate();
+        record.birthTime = composeBirthTime();
+        record.content = contentInput.value;
+        record.amount = onlyDigits(amountInput.value, 12);
+        record.notes = notesInput.value;
+        record.phone = formatPhone(phoneInput.value);
+        record.updatedAt = Date.now();
+
+        clearTimeout(saveTimer);
+        saveNow(record);
+      }
+
+      function goList() {
+        if (isEditing) saveCurrent();
+
+        currentId = null;
+        setEditing(false);
+        detailScreen.classList.remove("active");
+        listScreen.classList.add("active");
+        renderList();
+
+        window.scrollTo({top: 0, behavior: "instant"});
+      }
+
+      function deleteCurrent() {
+        const record = getCurrent();
+        if (!record) return;
+
+        const hasAnything =
+          (record.title || "").trim() ||
+          (record.counselor || "").trim() ||
+          (record.content || "").trim() ||
+          (record.notes || "").trim() ||
+          record.phone ||
+          record.amount ||
+          record.birthDate ||
+          record.birthTime;
+
+        if (hasAnything && !confirm("이 상담 기록을 삭제할까요?")) return;
+
+        const deletingId = currentId;
+        records = records.filter(r => r.id !== deletingId);
+        saveLocalMirror();
+        if (currentUser) deleteDoc(doc(db, "users", currentUser.uid, "consultations", deletingId)).catch(error => console.error("Cloud delete failed:", error));
+        currentId = null;
+        setEditing(false);
+        detailScreen.classList.remove("active");
+        listScreen.classList.add("active");
+        renderList();
+      }
+
+      function clearSearch() {
+        searchInput.value = "";
+        searchDate.value = "";
+        renderList();
+        searchInput.focus();
+      }
+
+      function openSettings() {
+        settingsModal.hidden = false;
+      }
+
+      function closeSettings() {
+        settingsModal.hidden = true;
+      }
+
+      async function deleteAllData() {
+        if (!records.length) { alert("삭제할 상담 데이터가 없습니다."); return; }
+        const ok = confirm("정말 모든 상담 데이터를 지울까요?\n\n이 작업은 되돌릴 수 없습니다.");
+        if (!ok) return;
+        const ids = records.map(record => record.id);
+        try {
+          if (currentUser) await Promise.all(ids.map(id => deleteDoc(doc(db, "users", currentUser.uid, "consultations", id))));
+          records = [];
+          currentId = null;
+          saveLocalMirror();
+          searchInput.value = "";
+          searchDate.value = "";
+          closeSettings();
+          renderList();
+          alert("모든 상담 데이터가 삭제되었습니다.");
+        } catch (error) {
+          console.error("Delete all failed:", error);
+          alert("데이터 삭제 중 오류가 발생했습니다.");
+        }
+      }
+
+      function authErrorMessage(error) {
+        const code = error?.code || "";
+        const messages = {
+          "auth/email-already-in-use": "이미 가입된 Gmail입니다.",
+          "auth/invalid-email": "Gmail 주소를 확인해주세요.",
+          "auth/invalid-credential": "Gmail 또는 비밀번호가 맞지 않습니다.",
+          "auth/missing-password": "비밀번호를 입력해주세요.",
+          "auth/weak-password": "비밀번호는 6자 이상으로 입력해주세요.",
+          "auth/too-many-requests": "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.",
+          "auth/network-request-failed": "네트워크 연결을 확인해주세요.",
+          "auth/operation-not-allowed": "Firebase 콘솔에서 이메일/비밀번호 로그인을 활성화해주세요.",
+          "auth/unauthorized-domain": "Firebase Authentication의 허용된 도메인에 현재 사이트를 추가해주세요.",
+          "auth/password-does-not-meet-requirements": "Firebase에 설정된 비밀번호 조건을 확인해주세요."
+        };
+        return messages[code] || `인증 오류가 발생했습니다. (${code || "unknown"})`;
+      }
+
+      function validateAuthInput() {
+        const email = authEmail.value.trim().toLowerCase();
+        const password = authPassword.value;
+        if (!email.endsWith("@gmail.com")) { authMessage.textContent = "Gmail 주소(@gmail.com)를 입력해주세요."; return null; }
+        if (password.length < 6) { authMessage.textContent = "비밀번호는 6자 이상으로 입력해주세요."; return null; }
+        return { email, password };
+      }
+
+      async function handleLogin() {
+        const value = validateAuthInput(); if (!value) return;
+        authMessage.textContent = "로그인 중…";
+        try { await signInWithEmailAndPassword(auth, value.email, value.password); authMessage.textContent = ""; authPassword.value = ""; }
+        catch (error) { authMessage.textContent = authErrorMessage(error); }
+      }
+
+      async function handleSignup() {
+        const value = validateAuthInput(); if (!value) return;
+        authMessage.textContent = "회원가입 중…";
+        try { await createUserWithEmailAndPassword(auth, value.email, value.password); authMessage.textContent = ""; authPassword.value = ""; }
+        catch (error) { authMessage.textContent = authErrorMessage(error); }
+      }
+
+      async function handleLogout() {
+        try { closeSettings(); await signOut(auth); } catch (error) { console.error("Logout failed:", error); }
+      }
+
+      onAuthStateChanged(auth, async user => {
+        if (unsubscribeRecords) { unsubscribeRecords(); unsubscribeRecords = null; }
+        currentUser = user || null;
+        currentId = null;
+        isEditing = false;
+        detailScreen.classList.remove("active");
+        listScreen.classList.add("active");
+
+        if (!user) {
+          records = [];
+          mainApp.hidden = true;
+          authScreen.hidden = false;
+          accountEmail.textContent = "-";
+          return;
+        }
+
+        authScreen.hidden = true;
+        mainApp.hidden = false;
+        accountEmail.textContent = user.email || "로그인됨";
+        records = loadJsonRecords(userCacheKey(user.uid));
+        renderCounselorSuggestions();
+        renderList();
+        try { await migrateLegacyRecordsOnce(user); } catch (error) { console.error("Legacy migration failed:", error); }
+        startCloudSync(user);
+      });
+
+      loginBtn.addEventListener("click", handleLogin);
+      signupBtn.addEventListener("click", handleSignup);
+      logoutBtn.addEventListener("click", handleLogout);
+      authPassword.addEventListener("keydown", event => { if (event.key === "Enter") handleLogin(); });
+
+      themeBtn.addEventListener("click", toggleTheme);
+      settingsBtn.addEventListener("click", openSettings);
+      closeSettingsBtn.addEventListener("click", closeSettings);
+      deleteAllBtn.addEventListener("click", deleteAllData);
+
+      settingsModal.addEventListener("click", e => {
+        if (e.target === settingsModal) closeSettings();
+      });
+
+      document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && !settingsModal.hidden) closeSettings();
+        if (e.key === "Escape" && !statsModal.hidden) closeStats();
+      });
+
+      statsBtn.addEventListener("click", openStats);
+      closeStatsBtn.addEventListener("click", closeStats);
+      statsModal.addEventListener("click", e => { if (e.target === statsModal) closeStats(); });
+      periodChips.addEventListener("click", e => {
+        const btn = e.target.closest("button[data-period]");
+        if (!btn) return;
+        statsPeriod = btn.dataset.period;
+        if (statsPeriod === "custom" && !rangeFrom.value && !rangeTo.value) {
+          const r = periodRange("month");
+          rangeFrom.value = r.from;
+          rangeTo.value = today();
+        }
+        renderStats();
+      });
+      rangeFrom.addEventListener("change", renderStats);
+      rangeTo.addEventListener("change", renderStats);
+      statsExportBtn.addEventListener("click", exportStatsCsv);
+
+      exportCsvBtn.addEventListener("click", exportAllCsv);
+      backupBtn.addEventListener("click", saveBackup);
+      restoreBtn.addEventListener("click", () => { restoreFile.value = ""; restoreFile.click(); });
+      restoreFile.addEventListener("change", () => restoreBackup(restoreFile.files[0]));
+
+      phoneInput.addEventListener("input", () => {
+        const formatted = formatPhone(phoneInput.value);
+        if (phoneInput.value !== formatted) phoneInput.value = formatted;
+        updateContactLinks(formatted);
+        syncField("phone", formatted);
+      });
+
+      searchInput.addEventListener("input", renderList);
+      searchDate.addEventListener("change", renderList);
+      clearSearchBtn.addEventListener("click", clearSearch);
+
+      addBtn.addEventListener("click", addRecord);
+      emptyAddBtn.addEventListener("click", addRecord);
+      backBtn.addEventListener("click", goList);
+
+      favoriteBtn.addEventListener("click", () => {
+        if (currentId) toggleFavorite(currentId);
+      });
+
+      editBtn.addEventListener("click", () => {
+        setEditing(true);
+
+        [
+          birthYearInput,
+          birthMonthInput,
+          birthDayInput,
+          birthHourInput,
+          birthMinuteInput
+        ].forEach(input => {
+          input.readOnly = false;
+          input.removeAttribute("readonly");
+        });
+      });
+
+      doneBtn.addEventListener("click", () => {
+        saveCurrent();
+        goList();
+      });
+
+      deleteBtn.addEventListener("click", deleteCurrent);
+
+      recordList.addEventListener("click", e => {
+        const item = e.target.closest(".record");
+        if (!item) return;
+
+        const favoriteAction = e.target.closest('[data-action="favorite"]');
+        if (favoriteAction) {
+          e.stopPropagation();
+          toggleFavorite(item.dataset.id);
+          return;
+        }
+
+        openRecord(item.dataset.id, false);
+      });
+
+      recordList.addEventListener("keydown", e => {
+        if (e.target.closest('[data-action="favorite"]')) return;
+        const item = e.target.closest(".record");
+        if (!item) return;
+
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openRecord(item.dataset.id, false);
+        }
+      });
+
+      titleInput.addEventListener("input", e => syncField("title", e.target.value));
+      counselorInput.addEventListener("input", e => {
+        syncField("counselor", e.target.value);
+        renderCounselorSuggestions();
+      });
+
+      counselorInput.addEventListener("change", () => {
+        autofillCounselorBirthInfo();
+      });
+
+      counselorInput.addEventListener("blur", () => {
+        autofillCounselorBirthInfo();
+      });
+
+      dateInput.addEventListener("change", e => syncField("date", e.target.value));
+      const birthInputs = [
+        { el: birthYearInput, max: 4, next: birthMonthInput },
+        { el: birthMonthInput, max: 2, next: birthDayInput },
+        { el: birthDayInput, max: 2, next: birthHourInput },
+        { el: birthHourInput, max: 2, next: birthMinuteInput },
+        { el: birthMinuteInput, max: 2, next: null }
+      ];
+
+      birthInputs.forEach(({ el, max, next }) => {
+        el.addEventListener("input", () => {
+          const cleaned = onlyDigits(el.value, max);
+          if (el.value !== cleaned) el.value = cleaned;
+
+          syncBirthParts();
+
+          if (next && cleaned.length >= max) {
+            next.focus();
+            next.select();
+          }
+        });
+      });
+
+      birthMonthInput.addEventListener("blur", () => {
+        if (birthMonthInput.value) birthMonthInput.value = clampPart(birthMonthInput.value, 1, 12);
+        syncBirthParts();
+      });
+
+      birthDayInput.addEventListener("blur", () => {
+        if (birthDayInput.value) birthDayInput.value = clampPart(birthDayInput.value, 1, 31);
+        syncBirthParts();
+      });
+
+      birthHourInput.addEventListener("blur", () => {
+        if (birthHourInput.value) birthHourInput.value = clampPart(birthHourInput.value, 0, 23);
+        syncBirthParts();
+      });
+
+      birthMinuteInput.addEventListener("blur", () => {
+        if (birthMinuteInput.value) birthMinuteInput.value = clampPart(birthMinuteInput.value, 0, 59);
+        syncBirthParts();
+      });
+
+      contentInput.addEventListener("input", e => syncField("content", e.target.value));
+      notesInput.addEventListener("input", e => syncField("notes", e.target.value));
+
+      amountInput.addEventListener("input", () => {
+        const digits = onlyDigits(amountInput.value, 12).replace(/^0+(?=\d)/, "");
+        amountInput.value = formatAmount(digits);
+        syncField("amount", digits);
+      });
+
+      segGroups.forEach(group => {
+        group.addEventListener("click", e => {
+          const btn = e.target.closest("button[data-value]");
+          if (!btn || !isEditing) return;
+          const record = getCurrent();
+          if (!record) return;
+
+          const field = group.dataset.field;
+          let value = btn.dataset.value;
+          // 성별·결제는 다시 누르면 선택 해제, 양력/음력은 항상 하나 선택
+          if (field !== "calendar" && record[field] === value) value = "";
+
+          record[field] = value;
+          record.updatedAt = Date.now();
+          updateSeg(field, value);
+          scheduleSave();
+        });
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (currentId && isEditing) saveCurrent();
+      });
+
+      loadTheme();
+    })();
+  </script>
+</body>
+</html>
