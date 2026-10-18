@@ -1814,64 +1814,6 @@
           .join("");
       }
 
-      function autofillCounselorBirthInfo() {
-        if (!isEditing) return;
-
-        const name = counselorInput.value.trim().toLowerCase();
-        if (!name) return;
-
-        const profile = getCounselorProfiles(currentId)
-          .find(item => item.name.toLowerCase() === name);
-
-        if (!profile) return;
-
-        const record = getCurrent();
-        if (!record) return;
-
-        let changed = false;
-
-        if (profile.birthDate && record.birthDate !== profile.birthDate) {
-          const dateParts = splitBirthDate(profile.birthDate);
-          birthYearInput.value = dateParts.year;
-          birthMonthInput.value = dateParts.month;
-          birthDayInput.value = dateParts.day;
-          record.birthDate = profile.birthDate;
-          changed = true;
-        }
-
-        if (profile.birthTime && record.birthTime !== profile.birthTime) {
-          const timeParts = splitBirthTime(profile.birthTime);
-          birthHourInput.value = timeParts.hour;
-          birthMinuteInput.value = timeParts.minute;
-          record.birthTime = profile.birthTime;
-          changed = true;
-        }
-
-        if (profile.birthDate && record.calendar !== profile.calendar) {
-          record.calendar = profile.calendar;
-          updateSeg("calendar", record.calendar);
-          changed = true;
-        }
-
-        if (profile.gender && record.gender !== profile.gender) {
-          record.gender = profile.gender;
-          updateSeg("gender", record.gender);
-          changed = true;
-        }
-
-        if (profile.phone && !record.phone) {
-          record.phone = profile.phone;
-          phoneInput.value = profile.phone;
-          updateContactLinks(profile.phone);
-          changed = true;
-        }
-
-        if (changed) {
-          record.updatedAt = Date.now();
-          scheduleSave();
-        }
-      }
-
       function toggleFavorite(id) {
         const record = records.find(r => r.id === id);
         if (!record) return;
@@ -2392,14 +2334,6 @@
       counselorInput.addEventListener("input", e => {
         syncField("counselor", e.target.value);
         renderCounselorSuggestions();
-      });
-
-      counselorInput.addEventListener("change", () => {
-        autofillCounselorBirthInfo();
-      });
-
-      counselorInput.addEventListener("blur", () => {
-        autofillCounselorBirthInfo();
       });
 
       dateInput.addEventListener("change", e => syncField("date", e.target.value));
